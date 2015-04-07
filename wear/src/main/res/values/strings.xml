@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Toast</string>
+    <string name="hello_round">Hello Round World!</string>
+    <string name="hello_square">Hello Square World!</string>
+    <string name="btn_toast">Button test</string>
+    <string name="message_confirmed">ტაქსი გამოძახებულია!</string>
+    <string name="message_canceled">ვერ გამოვიძახე</string>
+    <string name="calling_taxi">ვიძახებ ტაქსის</string>
+</resources>
