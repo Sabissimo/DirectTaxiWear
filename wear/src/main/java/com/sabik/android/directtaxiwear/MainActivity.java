@@ -8,10 +8,12 @@ import android.support.wearable.activity.ConfirmationActivity;
 import android.support.wearable.view.DelayedConfirmationView;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.Node;
@@ -21,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends Activity implements
-        DelayedConfirmationView.DelayedConfirmationListener {
+        DelayedConfirmationView.DelayedConfirmationListener, GoogleApiClient.ConnectionCallbacks, MessageApi.MessageListener {
 
     private static final long CONNECTION_TIME_OUT_MS = 100;
     private static final int CONFIRMATION_REQUEST_CODE = 0;
@@ -46,7 +48,6 @@ public class MainActivity extends Activity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.round_activity_main);
-
         initApi();
 
 
@@ -57,6 +58,17 @@ public class MainActivity extends Activity implements
         mDelayedView.start();
 
     }
+
+    @Override
+    public void onConnected( Bundle bundle ) {
+        Wearable.MessageApi.addListener( client, this );
+    }
+
+    @Override
+    public void onConnectionSuspended( int conid ) {
+
+    }
+
     private void initApi() {
         client = getGoogleApiClient(this);
         retrieveDeviceNode();
@@ -122,7 +134,8 @@ public class MainActivity extends Activity implements
                 @Override
                 public void run() {
                     client.blockingConnect(CONNECTION_TIME_OUT_MS, TimeUnit.MILLISECONDS);
-                    Wearable.MessageApi.sendMessage(client, nodeId, getString(R.string.message_confirmed), null).setResultCallback(
+                    Wearable.MessageApi.sendMessage(client, nodeId, getString(R.string.message_confirmed), null);
+                           /* .setResultCallback(
                             new ResultCallback<MessageApi.SendMessageResult>() {
                                 @Override
                                 public void onResult(MessageApi.SendMessageResult sendMessageResult) {
@@ -145,13 +158,12 @@ public class MainActivity extends Activity implements
                                         Intent intent = new Intent(getBaseContext(), ConfirmationActivity.class);
                                         intent.putExtra(ConfirmationActivity.EXTRA_ANIMATION_TYPE,
                                                 ConfirmationActivity.SUCCESS_ANIMATION);
-                                        /*intent.putExtra(ConfirmationActivity.EXTRA_MESSAGE,
-                                                getString(R.string.message_confirmed));*/
+
                                         startActivityForResult(intent, CONFIRMATION_REQUEST_CODE);
                                     }
                                 }
                             }
-                    );
+                    );*/
                 }
             }).start();
         }
@@ -166,5 +178,12 @@ public class MainActivity extends Activity implements
                     getString(R.string.message_canceled));
             startActivityForResult(intent, CONFIRMATION_REQUEST_CODE);
         }
+    }
+
+    @Override
+    public void onMessageReceived(MessageEvent messageEvent) {
+
+        String message = messageEvent.getPath();
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
     }
 }

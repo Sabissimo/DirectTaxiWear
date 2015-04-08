@@ -9,6 +9,11 @@ import android.os.StrictMode;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.Wearable;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
@@ -21,25 +26,36 @@ import org.apache.http.message.BasicNameValuePair;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Sabik on 4/6/2015.
  */
 public class TaxiMain{
 
+    private static final long CONNECTION_TIME_OUT_MS = 100;
+
+    private GoogleApiClient client;
+    private String nodeId;
+
     private static final String TAG = "TOASTME";
     private static Context mycontext;
 
-    public TaxiMain(Context mContext){
+    public TaxiMain(Context mContext, GoogleApiClient mClient, String mNodeId){
         mycontext = mContext;
+        nodeId = mNodeId;
+        client = mClient;
     }
 
 
     public void SendHTTP(String message) {
         final Handler mHandler = new Handler();
+
+
         showToast(message);
+        replyToWatch();
 
-
+        /*
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
@@ -93,11 +109,57 @@ public class TaxiMain{
                 }
                 //}
             }
-        }).start();
+        }).start();*/
     }
 
     private void showToast(String message) {
         Log.d(TAG, "sendToast3");
         Toast.makeText(mycontext, message, Toast.LENGTH_LONG).show();
+    }
+
+    private void replyToWatch() {
+        if (nodeId != null) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    client.blockingConnect(CONNECTION_TIME_OUT_MS, TimeUnit.MILLISECONDS);
+                    Wearable.MessageApi.sendMessage(client, nodeId, "message received", null);
+                           /* .setResultCallback(
+                            new ResultCallback<MessageApi.SendMessageResult>() {
+                                @Override
+                                public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                                    if (!sendMessageResult.getStatus().isSuccess()) {
+                                        Log.d(TAG, "Failed to send message with status code: "
+                                                + sendMessageResult.getStatus().getStatusCode());
+                                        client.disconnect();
+                                        Intent intent = new Intent(getBaseContext(), ConfirmationActivity.class);
+                                        intent.putExtra(ConfirmationActivity.EXTRA_ANIMATION_TYPE,
+                                                ConfirmationActivity.FAILURE_ANIMATION);
+                                        intent.putExtra(ConfirmationActivity.EXTRA_MESSAGE,
+                                                getString(R.string.message_canceled));
+                                        startActivityForResult(intent, CONFIRMATION_REQUEST_CODE);
+                                    }
+                                    else
+                                    {
+                                        Log.d(TAG, "Succeeded to send message with status code: "
+                                                + sendMessageResult.getStatus().getStatusCode());
+                                        client.disconnect();
+                                        Intent intent = new Intent(getBaseContext(), ConfirmationActivity.class);
+                                        intent.putExtra(ConfirmationActivity.EXTRA_ANIMATION_TYPE,
+                                                ConfirmationActivity.SUCCESS_ANIMATION);
+
+                                        startActivityForResult(intent, CONFIRMATION_REQUEST_CODE);
+                                    }
+                                }
+                            }
+                    );*/
+                }
+            }).start();
+        }
+        else
+        {
+            Log.d(TAG, "Device offline");
+            client.disconnect();
+        }
     }
 }
