@@ -1,6 +1,7 @@
 package com.sabik.android.directtaxiwear;
 
 
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.wearable.MessageEvent;
@@ -13,6 +14,7 @@ public class ListenerService extends WearableListenerService {
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
 
+        Log.d(TAG, "Message received");
         String message = messageEvent.getPath();
         Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
     }

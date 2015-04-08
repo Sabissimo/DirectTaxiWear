@@ -1,53 +1,53 @@
 package com.sabik.android.directtaxiwear;
 
-import android.content.Context;
-import android.location.Criteria;
-import android.location.Location;
-import android.location.LocationManager;
-import android.os.Handler;
-import android.os.StrictMode;
+import android.content.DialogInterface;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.wearable.Node;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends ActionBarActivity {
 
-    private static final long CONNECTION_TIME_OUT_MS = 100;
-
-    private String nodeId;
-
     private static final String TAG = "TOASTME";
     private GoogleApiClient client;
+    private String nodeId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initApi();
         setContentView(R.layout.activity_main);
+
+        client = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                    @Override
+                    public void onConnected(Bundle bundle) {
+                        Log.d(TAG, "Client connect");
+                        Wearable.NodeApi.getConnectedNodes(client).setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
+                            @Override
+                            public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
+                                if (getConnectedNodesResult.getStatus().isSuccess() && getConnectedNodesResult.getNodes().size() > 0) {
+                                    nodeId = getConnectedNodesResult.getNodes().get(0).getId();
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onConnectionSuspended(int conId) {
+                    }
+                })
+                .addApi(Wearable.API)
+                .build();
     }
 
 
@@ -77,82 +77,29 @@ public class MainActivity extends ActionBarActivity {
     {
         TaxiMain taxiMain = new TaxiMain(this, client, nodeId);
         taxiMain.SendHTTP("Send test");
-        //replyToWatch();
-
     }
 
-    private void initApi() {
-        client = getGoogleApiClient(this);
-        retrieveDeviceNode();
-    }
+    @Override
+    protected void onResume() {
+        super.onResume();
 
-    private GoogleApiClient getGoogleApiClient(Context context) {
-        return new GoogleApiClient.Builder(context)
-                .addApi(Wearable.API)
-                .build();
-    }
+        int connectionResult = GooglePlayServicesUtil.isGooglePlayServicesAvailable(getApplicationContext());
 
-    private void retrieveDeviceNode() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                client.blockingConnect(CONNECTION_TIME_OUT_MS, TimeUnit.MILLISECONDS);
-                Log.d(TAG,"start");
-                NodeApi.GetConnectedNodesResult result =
-                        Wearable.NodeApi.getConnectedNodes(client).await();
-                List<Node> nodes = result.getNodes();
-                if (nodes.size() > 0) {
-                    nodeId = nodes.get(0).getId();
-                }
-                Log.d(TAG,"finish");
-                client.disconnect();
-            }
-        }).start();
-    }
-
-    private void replyToWatch() {
-        if (nodeId != null) {
-            new Thread(new Runnable() {
+        if (connectionResult != ConnectionResult.SUCCESS) {
+            GooglePlayServicesUtil.showErrorDialogFragment(connectionResult, this, 0, new DialogInterface.OnCancelListener() {
                 @Override
-                public void run() {
-                    client.blockingConnect(CONNECTION_TIME_OUT_MS, TimeUnit.MILLISECONDS);
-                    Wearable.MessageApi.sendMessage(client, nodeId, "message received", null);
-                           /* .setResultCallback(
-                            new ResultCallback<MessageApi.SendMessageResult>() {
-                                @Override
-                                public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                                    if (!sendMessageResult.getStatus().isSuccess()) {
-                                        Log.d(TAG, "Failed to send message with status code: "
-                                                + sendMessageResult.getStatus().getStatusCode());
-                                        client.disconnect();
-                                        Intent intent = new Intent(getBaseContext(), ConfirmationActivity.class);
-                                        intent.putExtra(ConfirmationActivity.EXTRA_ANIMATION_TYPE,
-                                                ConfirmationActivity.FAILURE_ANIMATION);
-                                        intent.putExtra(ConfirmationActivity.EXTRA_MESSAGE,
-                                                getString(R.string.message_canceled));
-                                        startActivityForResult(intent, CONFIRMATION_REQUEST_CODE);
-                                    }
-                                    else
-                                    {
-                                        Log.d(TAG, "Succeeded to send message with status code: "
-                                                + sendMessageResult.getStatus().getStatusCode());
-                                        client.disconnect();
-                                        Intent intent = new Intent(getBaseContext(), ConfirmationActivity.class);
-                                        intent.putExtra(ConfirmationActivity.EXTRA_ANIMATION_TYPE,
-                                                ConfirmationActivity.SUCCESS_ANIMATION);
-
-                                        startActivityForResult(intent, CONFIRMATION_REQUEST_CODE);
-                                    }
-                                }
-                            }
-                    );*/
+                public void onCancel(DialogInterface dialog) {
+                    finish();
                 }
-            }).start();
+            });
+        } else {
+            client.connect();
         }
-        else
-        {
-            Log.d(TAG, "Device offline");
-            client.disconnect();
-        }
+    }
+
+    @Override
+    protected void onPause() {
+        client.disconnect();
+        super.onPause();
     }
 }
