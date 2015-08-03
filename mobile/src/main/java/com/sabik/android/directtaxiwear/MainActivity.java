@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -21,11 +22,13 @@ public class MainActivity extends ActionBarActivity {
     private static final String TAG = "TOASTME";
     private GoogleApiClient client;
     private String nodeId;
+    private TextView mTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mTextView = (TextView) findViewById(R.id.textView);
 
         client = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
@@ -37,6 +40,13 @@ public class MainActivity extends ActionBarActivity {
                             public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
                                 if (getConnectedNodesResult.getStatus().isSuccess() && getConnectedNodesResult.getNodes().size() > 0) {
                                     nodeId = getConnectedNodesResult.getNodes().get(0).getId();
+                                    TaxiMain taxiMain = new TaxiMainBuilder()
+                                            .context(getApplicationContext())
+                                            .client(client)
+                                            .nodeId(nodeId)
+                                            .textView(mTextView)
+                                            .buildTaxi();
+                                    taxiMain.SendHTTP("");
                                 }
                             }
                         });
@@ -75,14 +85,26 @@ public class MainActivity extends ActionBarActivity {
 
     public void OnButtonOnClick(View view)
     {
-        TaxiMain taxiMain = new TaxiMain(this, client, nodeId);
+        TaxiMain taxiMain = new TaxiMainBuilder()
+                .context(this)
+                .client(client)
+                .nodeId(nodeId)
+                .textView(mTextView)
+                .buildTaxi();
         taxiMain.SendHTTP("lightson");
+        //mTextView.setText("On");
     }
 
     public void OnButtonOffClick(View view)
     {
-        TaxiMain taxiMain = new TaxiMain(this, client, nodeId);
+        TaxiMain taxiMain = new TaxiMainBuilder()
+                .context(this)
+                .client(client)
+                .nodeId(nodeId)
+                .textView(mTextView)
+                .buildTaxi();
         taxiMain.SendHTTP("lightsoff");
+        //mTextView.setText("Off");
     }
 
     @Override

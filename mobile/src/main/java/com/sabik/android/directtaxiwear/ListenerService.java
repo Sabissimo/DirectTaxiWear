@@ -3,6 +3,7 @@ package com.sabik.android.directtaxiwear;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
@@ -34,7 +35,13 @@ public class ListenerService extends WearableListenerService {
                             public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
                                 if (getConnectedNodesResult.getStatus().isSuccess() && getConnectedNodesResult.getNodes().size() > 0) {
                                     nodeId = getConnectedNodesResult.getNodes().get(0).getId();
-                                    TaxiMain taxiMain = new TaxiMain(getApplicationContext(),client,nodeId);
+                                    //View view = new View();
+                                    TaxiMain taxiMain = new TaxiMainBuilder()
+                                            .context(getApplicationContext())
+                                            .client(client)
+                                            .nodeId(nodeId)
+                                            .buildTaxi();
+
                                     taxiMain.SendHTTP(message);
                                 }
                             }
