@@ -1,34 +1,27 @@
 package com.sabik.android.directtaxiwear;
 
 import android.content.Context;
-import android.location.Criteria;
-import android.location.Location;
-import android.location.LocationManager;
 import android.os.Handler;
 import android.os.StrictMode;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.Wearable;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by Sabik on 4/6/2015.
@@ -39,6 +32,7 @@ public class TaxiMain{
     private String nodeId;
     private static final String TAG = "TOASTME";
     private static Context context;
+    private static String messageglobal;
 
     public TaxiMain(Context myContext,GoogleApiClient myClient, String myNodeId){
         context = myContext;
@@ -50,8 +44,33 @@ public class TaxiMain{
     public void SendHTTP(String message) {
         final Handler mHandler = new Handler();
 
+        messageglobal = message;
 
         showToast(message);
+
+        final TextView mTextView = (TextView) findViewById(R.id.text);
+
+
+        // Instantiate the RequestQueue.
+        RequestQueue queue = Volley.newRequestQueue(this);
+        String url ="http://www.google.com";
+
+// Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Display the first 500 characters of the response string.
+                        mTextView.setText("Response is: "+ response.substring(0,500));
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                mTextView.setText("That didn't work!");
+            }
+        });
+// Add the request to the RequestQueue.
+        queue.add(stringRequest);
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
@@ -63,28 +82,15 @@ public class TaxiMain{
                 try {
                     // TODO Auto-generated method stub
                     // Write your code here to update the UI.
-                    LocationManager locationManager = (LocationManager)context.getSystemService(context.LOCATION_SERVICE);
-                    Criteria criteria = new Criteria();
-                    String bestProvider = locationManager.getBestProvider(criteria, false);
-                    Location location = locationManager.getLastKnownLocation(bestProvider);
-                    String myLocation = "Latitude = " + location.getLatitude() + " Longitude = " + location.getLongitude();
-
                     //I make a log to see the results
-                    Log.e("MY CURRENT LOCATION", myLocation);
                     HttpClient httpclient = new DefaultHttpClient();
-                    HttpPost httppost = new HttpPost("http://taxi.d1erp.com/addorder.php");
+                    HttpGet httpGet = new HttpGet("http://192.168.0.131/android/?cmd="+messageglobal);
 
                     try {
                         // Add your data
 
-                        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
-                        nameValuePairs.add(new BasicNameValuePair("phone", "597340898"));
-                        nameValuePairs.add(new BasicNameValuePair("lat", Double.toString(location.getLatitude())));
-                        nameValuePairs.add(new BasicNameValuePair("lon", Double.toString(location.getLongitude())));
-                        httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-
                         // Execute HTTP Post Request
-                        HttpResponse response = httpclient.execute(httppost);
+                        HttpResponse response = httpclient.execute(httpGet);
                         Log.d(TAG, "It works!");
                         replyToWatch("ok");
 

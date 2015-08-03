@@ -73,10 +73,16 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void OnButtonClick(View view)
+    public void OnButtonOnClick(View view)
     {
         TaxiMain taxiMain = new TaxiMain(this, client, nodeId);
-        taxiMain.SendHTTP("Send test");
+        taxiMain.SendHTTP("lightson");
+    }
+
+    public void OnButtonOffClick(View view)
+    {
+        TaxiMain taxiMain = new TaxiMain(this, client, nodeId);
+        taxiMain.SendHTTP("lightsoff");
     }
 
     @Override
